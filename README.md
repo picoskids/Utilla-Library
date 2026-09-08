@@ -84,8 +84,6 @@ pulling upstream changes is a manual merge, and `Plugin.cs`, `Behaviours/GameMod
 `Behaviours/NetworkController.cs` are the files that will fight you.
 
 ## Known gaps
-
-- Not tested in a live game yet.
 - `GorillaLibrary.Wardrobe` is not bundled. Separate plugin, works fine on top of this.
 - Utilla's old `RoomUtils` joining helpers are still missing, same as current Utilla.
 - Two mods claiming the same gamemode ID still collide, exactly like before.
