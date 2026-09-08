@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Project>
+
+	<PropertyGroup>
+		<GamePath Condition="'$(GamePath)' == '' AND Exists('C:\Program Files (x86)\Steam\steamapps\common\Gorilla Tag')">C:\Program Files (x86)\Steam\steamapps\common\Gorilla Tag</GamePath>
+		<GamePath Condition="'$(GamePath)' == '' AND Exists('$(HOME)/.steam/debian-installation/steamapps/common/Gorilla Tag')">$(HOME)/.steam/debian-installation/steamapps/common/Gorilla Tag</GamePath>
+		<GamePath Condition="'$(GamePath)' == '' AND Exists('$(HOME)/.steam/steam/steamapps/common/Gorilla Tag')">$(HOME)/.steam/steam/steamapps/common/Gorilla Tag</GamePath>
+
+		<GameAssemblyPath Condition="'$(GameAssemblyPath)' == ''">$(GamePath)\Gorilla Tag_Data\Managed</GameAssemblyPath>
+		<BepInExAssemblyPath Condition="'$(BepInExAssemblyPath)' == ''">$(GamePath)\BepInEx\core</BepInExAssemblyPath>
+		<PluginsPath Condition="'$(PluginsPath)' == ''">$(GamePath)\BepInEx\plugins</PluginsPath>
+		<PatchersPath Condition="'$(PatchersPath)' == ''">$(GamePath)\BepInEx\patchers</PatchersPath>
+	</PropertyGroup>
+
+	<ItemDefinitionGroup>
+		<Reference>
+			<Private>false</Private>
+		</Reference>
+	</ItemDefinitionGroup>
+
+	<PropertyGroup>
+		<TargetFramework>netstandard2.1</TargetFramework>
+		<LangVersion>preview</LangVersion>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	</PropertyGroup>
+
+</Project>
