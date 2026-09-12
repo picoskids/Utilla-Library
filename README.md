@@ -11,7 +11,7 @@
 # Utilla-Library 
 <sub>yes this readme is from seralyth</sub>
 
-Poison Menu is a **feature-packed** mod menu for Gorilla Tag, built by the community, for the community. Whether you just want mods, are a developer, or anything inbetween, this menu has you covered. Designed to be **as useful as possible**, it includes a variety of features and options that let you customize your modding experience to your heart’s content.  
+Poison Menu is a **2 in one lib** mod for Gorilla Tag, it includes GorillaLibrary (made by dev and Gorilla Tag Modding Hub and Utilla (by legoandmars and maintained by sirbirkingx) combined into 1 mod and made the compatible.
 
 <details>
   <summary><b>❓ Can I use your code?</b></summary>
@@ -20,6 +20,7 @@ Poison Menu is a **feature-packed** mod menu for Gorilla Tag, built by the commu
 - Your project **must** also be open-source.  
 - Give credit where it's due.
 - No shady stuff.
+- Listen to GorillaLibrary and Utilla's licenses too.
 - **[Follow the license.](https://www.gnu.org/licenses/gpl-3.0.html)**
 
 </details>
