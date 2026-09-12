@@ -3,7 +3,7 @@
 
 <p align="center">
 	<a href="https://github.com/picoskids/Utilla-Library/releases"><img src="https://img.shields.io/github/v/release/picoskids/Utilla-Library?label=version&style=for-the-badge"></a>
-	<a href="https://github.com/picoskids/Utilla-Library/releases/latest"><img src="https://img.shields.io/github/downloads/picoskids/Utilla-Library/latest/Poison-Menu.dll?style=for-the-badge"></a>
+	<a href="https://github.com/picoskids/Utilla-Library/releases/latest"><img src="https://img.shields.io/github/downloads/picoskids/Utilla-Library/latest/UtillaLibrary.dll?style=for-the-badge"></a>
 </p>
 
 ---
