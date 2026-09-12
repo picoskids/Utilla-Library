@@ -1,8 +1,8 @@
 <h1 align="center">Utilla-Library</h1>
 
 <p align="center">
-  <strong>Utilla and GorillaLibrary compatibility in one Gorilla Tag plugin.</strong><br>
-  Run mods built for either API through one shared game mode manager.
+  <strong>One DLL for Gorilla Tag mods that use Utilla or GorillaLibrary.</strong><br>
+  Both APIs use the same game modes and room callbacks.
 </p>
 
 <p align="center">
@@ -21,15 +21,15 @@
 
 ## Why it exists
 
-Utilla and GorillaLibrary both manage modded game modes and room callbacks. Installing them together can cause duplicate patches and conflicting game mode lists; some mods also declare the two plugins incompatible. A mod compiled for one library cannot simply use the other because its assembly and type references are fixed at build time.
+Install Utilla and GorillaLibrary side by side and they both patch the game's mode code while keeping separate mode lists. Some mods also mark the two plugins as incompatible. Removing either library leaves the mods built for it without the assembly they expect.
 
-Utilla-Library puts both public APIs in `UtillaLibrary.dll` and routes them through one game mode manager and network controller.
+Utilla-Library puts both APIs in `UtillaLibrary.dll`. Mods can still call the API they were built for, while one manager handles the game modes and room events.
 
 ## Installation
 
 1. Download `UtillaLibrary.dll` from the [latest release](https://github.com/picoskids/Utilla-Library/releases/latest).
 2. Put it in `BepInEx/plugins/UtillaLibrary/` inside your Gorilla Tag installation.
-3. Remove existing `Utilla.dll` and `GorillaLibrary.dll` copies from `BepInEx` so they do not load alongside it.
+3. Remove any old `Utilla.dll` and `GorillaLibrary.dll` files from `BepInEx` so they do not load alongside it.
 
 <details>
 <summary><strong>Build from source</strong></summary>
@@ -42,53 +42,58 @@ dotnet build UtillaLibrary/UtillaLibrary.csproj -c Release
 
 The output is `UtillaLibrary/bin/Release/netstandard2.1/UtillaLibrary.dll`.
 
-The build looks for Gorilla Tag in the usual Steam locations. For a different location, pass `-p:GamePath="/path/to/Gorilla Tag"`, set the `GamePath` environment variable, or edit [`Directory.Build.props`](Directory.Build.props).
+The build checks the usual Steam locations for Gorilla Tag. If your copy is elsewhere, pass `-p:GamePath="/path/to/Gorilla Tag"`, set the `GamePath` environment variable, or edit [`Directory.Build.props`](Directory.Build.props).
 
 </details>
 
 ## Using game modes
 
-The game mode selector and Virtual Stump custom map selector gain two page buttons:
+The regular game mode selector and the Virtual Stump custom map selector have two extra buttons:
 
 | Button | Action |
 | :---: | --- |
 | `-->` | Show the next page of modes |
 | `<--` | Show the previous page of modes |
 
-The pages contain the vanilla modes available on that selector, their modded versions, and custom modes registered by installed mods. Select a mode and join a room to trigger its join callback. Leaving the room or changing its mode triggers the corresponding leave callback.
+Keep paging past the usual modes to find their modded versions and any custom modes your installed mods add. Pick a mode, then join a room. Mods registered for that mode get a join callback; they get a leave callback when you leave or the room changes mode.
 
 > [!NOTE]
-> `GorillaComputer.SetGameModeWithoutButton` is currently gated by the selector patches, so calls from other mod code may be ignored. Use the in-game selector to change modes.
+> Calling `GorillaComputer.SetGameModeWithoutButton` from another mod may do nothing because the selector patches gate it. For now, change modes on the in-game board.
 
 ## How it works
 
-| Part | What it does |
-| --- | --- |
-| **One plugin, two APIs** | The [GorillaLibrary plugin](UtillaLibrary/GorillaLibrary/Plugin.cs) installs the Harmony patches. The [Utilla plugin](UtillaLibrary/Utilla/Plugin.cs) exposes Utilla types and events without creating a second game mode registry. Both BepInEx plugin GUIDs are present. |
-| **Assembly redirect** | Existing mods may reference assemblies named `Utilla` or `GorillaLibrary`. An `AssemblyResolve` handler in [`Compat.cs`](UtillaLibrary/GorillaLibrary/Compat.cs) maps those requests to `UtillaLibrary.dll` after this plugin loads. |
-| **Shared game mode list** | At game initialization, the [game mode manager](UtillaLibrary/GorillaLibrary/Behaviours/GameModeManager.cs) scans loaded plugins for `ModdedGamemode` attributes and older `UnbannedGamemode` names. It combines vanilla, modded vanilla, and custom modes and finds their join and leave callbacks. Attribute class names are recognized across both APIs. |
-| **Shared room events** | The [network controller](UtillaLibrary/GorillaLibrary/Behaviours/NetworkController.cs) observes room joins, leaves, and mode changes, calls registered callbacks, and forwards room events to Utilla. The Utilla plugin also forwards GorillaLibrary's game initialization event. |
-| **Incompatibility filter** | A runtime filter ignores incompatibility declarations targeting the two library GUIDs; it leaves all other declarations alone. Because it starts with the plugin, it may be too late for a mod BepInEx rejected during discovery. |
+### One DLL, two APIs
+
+The [GorillaLibrary plugin](UtillaLibrary/GorillaLibrary/Plugin.cs) installs the Harmony patches and owns the game mode list. The [Utilla plugin](UtillaLibrary/Utilla/Plugin.cs) provides Utilla's types and events without setting up a second list. Both BepInEx plugin IDs are present, so mods can depend on either one.
+
+Mods built for the original libraries may still ask for an assembly named `Utilla` or `GorillaLibrary`. The [`AssemblyResolve` handler](UtillaLibrary/GorillaLibrary/Compat.cs) sends those requests to `UtillaLibrary.dll` once this plugin has loaded.
+
+### Game modes and room events
+
+When the game starts, the [game mode manager](UtillaLibrary/GorillaLibrary/Behaviours/GameModeManager.cs) checks loaded mods for `ModdedGamemode` attributes, including the older `UnbannedGamemode` names. It puts their custom modes beside the vanilla and modded vanilla modes. It also finds the methods those mods marked for join and leave callbacks. The scanner matches attribute class names, so it accepts either library's API.
+
+The [network controller](UtillaLibrary/GorillaLibrary/Behaviours/NetworkController.cs) watches for room joins, leaves, and mode changes. It calls the registered methods and passes room events to Utilla. The Utilla plugin passes along GorillaLibrary's game initialization event too.
+
+### Incompatibility declarations
+
+The plugin filters out incompatibility declarations aimed at the Utilla and GorillaLibrary plugin IDs. Other declarations still apply. This only starts after the plugin loads, so a mod BepInEx rejected earlier may still be blocked.
 
 ## For mod authors
 
-Existing mods can keep their Utilla or GorillaLibrary API references and should keep the matching `[BepInDependency]` so they load after this plugin. New mods can use the GorillaLibrary API directly; its manager handles game mode registration and callbacks for both APIs.
+If your mod already uses Utilla or GorillaLibrary, you can keep that reference. Keep its matching `[BepInDependency]` too, so your mod loads after this plugin. For a new mod, use the GorillaLibrary API; it is the one that manages modes and callbacks here.
 
 ## Known limitations
 
-- `GorillaLibrary.Wardrobe` is not bundled. It is a separate plugin that can run alongside this one.
-- Utilla's old `RoomUtils` joining helpers are still missing, as in current Utilla.
+- `GorillaLibrary.Wardrobe` is a separate plugin. It is not bundled, but you can run it alongside this one.
+- Utilla's old `RoomUtils` joining helpers are still missing, just as they are in current Utilla.
 - Two mods claiming the same game mode ID still collide.
-- The assembly redirect only exists after this plugin loads. A mod resolving a library reference earlier may fail to load; give it the appropriate BepInEx dependency.
-- The incompatibility filter cannot guarantee that BepInEx will load a mod rejected earlier during discovery.
+- The assembly redirect only works after this plugin loads. A mod that tries to resolve its library reference earlier may fail; make sure it declares the appropriate BepInEx dependency.
+- The incompatibility filter cannot rescue a mod BepInEx rejected before this plugin loaded.
 
 ## Credits and licenses
 
 Madman had the idea and asked me to build it. This exists because of him.
 
-| Included code | Origin | Notes |
-| --- | --- | --- |
-| [`UtillaLibrary/GorillaLibrary/`](UtillaLibrary/GorillaLibrary/) | [GorillaTagModdingHub/GorillaLibrary](https://github.com/GorillaTagModdingHub/GorillaLibrary) | Vendored MIT snapshot with the Utilla incompatibility removed, a room bridge and assembly redirect added, and namespace-independent game mode scanning. |
-| [`UtillaLibrary/Utilla/`](UtillaLibrary/Utilla/) | [legoandmars/Utilla](https://github.com/legoandmars/Utilla) | MIT public API reimplementation, checked against a shipped `Utilla.dll`. |
+The [`GorillaLibrary` code](UtillaLibrary/GorillaLibrary/) comes from [GorillaTagModdingHub/GorillaLibrary](https://github.com/GorillaTagModdingHub/GorillaLibrary) under the MIT license. This copy removes its Utilla incompatibility and adds the room bridge and assembly redirect. It also lets the game mode scanner recognize attributes from either API. The code is a snapshot, so upstream updates need a manual merge, especially in `Plugin.cs`, `Behaviours/GameModeManager.cs`, and `Behaviours/NetworkController.cs`.
 
-Both copyright notices are in the [MIT license](LICENSE). GorillaLibrary updates require a manual merge, especially in `Plugin.cs`, `Behaviours/GameModeManager.cs`, and `Behaviours/NetworkController.cs`.
+The [`Utilla` code](UtillaLibrary/Utilla/) reimplements the public API from [legoandmars/Utilla](https://github.com/legoandmars/Utilla), also under MIT. The API was checked member by member against a shipped `Utilla.dll`. Both copyright notices are in [LICENSE](LICENSE).
