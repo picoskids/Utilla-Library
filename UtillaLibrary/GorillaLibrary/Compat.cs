@@ -3,8 +3,10 @@ using GorillaGameModes;
 using GorillaLibrary.Models;
 using BepInExPluginInfo = BepInEx.PluginInfo;
 using HarmonyLib;
+using Mono.Cecil;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 
@@ -72,6 +74,80 @@ internal static class IncompatibilityFilter
         if (__result is null) return;
 
         __result = __result.Where(incompatibility => !BridgedGuids.Contains(incompatibility.IncompatibilityGUID)).ToArray();
+    }
+}
+
+public static class CompatibilityPatcher
+{
+    private const string IncompatibilityAttribute = "BepInEx.BepInIncompatibility";
+
+    private static readonly HashSet<string> BridgedGuids = new(StringComparer.Ordinal)
+    {
+        "org.legoandmars.gorillatag.utilla",
+        "dev.gorillalibrary"
+    };
+
+    public static IEnumerable<string> TargetDLLs
+    {
+        get
+        {
+            if (!Directory.Exists(PluginDirectory)) return Array.Empty<string>();
+
+            return Directory.GetFiles(PluginDirectory, "*.dll", SearchOption.AllDirectories)
+                .Select(Path.GetFileName)
+                .Where(name => !string.IsNullOrEmpty(name))
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    private static string PluginDirectory =>
+        Path.Combine(AppContext.BaseDirectory, "BepInEx", "plugins");
+
+    public static void Patch(AssemblyDefinition assembly)
+    {
+        int removed = 0;
+
+        foreach (TypeDefinition type in AllTypes(assembly.MainModule.Types))
+        {
+            for (int index = type.CustomAttributes.Count - 1; index >= 0; index--)
+            {
+                CustomAttribute attribute = type.CustomAttributes[index];
+                if (attribute.AttributeType.FullName != IncompatibilityAttribute ||
+                    !TargetsBridgedLibrary(attribute))
+                {
+                    continue;
+                }
+
+                type.CustomAttributes.RemoveAt(index);
+                removed++;
+            }
+        }
+
+        if (removed > 0)
+        {
+            Console.WriteLine($"Removed {removed} Utilla/GorillaLibrary incompatibility declaration(s) from {assembly.Name.Name}.");
+        }
+    }
+
+    private static bool TargetsBridgedLibrary(CustomAttribute attribute)
+    {
+        if (attribute.ConstructorArguments.Count == 0) return false;
+
+        CustomAttributeArgument argument = attribute.ConstructorArguments[0];
+        return argument.Value is string guid && BridgedGuids.Contains(guid);
+    }
+
+    private static IEnumerable<TypeDefinition> AllTypes(IEnumerable<TypeDefinition> types)
+    {
+        foreach (TypeDefinition type in types)
+        {
+            yield return type;
+
+            foreach (TypeDefinition nested in AllTypes(type.NestedTypes))
+            {
+                yield return nested;
+            }
+        }
     }
 }
 

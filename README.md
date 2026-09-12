@@ -16,13 +16,22 @@ full of new types and the mod cannot see it. So this is one file pretending to b
 
 ## Install
 
+Build the project once. Copy `UtillaLibrary.dll` into both `BepInEx/patchers/`
+and `BepInEx/plugins/UtillaLibrary/`.
+
+The patcher runs before BepInEx resolves plugin dependencies and removes only
+the `BepInIncompatibility` declarations that Utilla and GorillaLibrary place
+on each other. This is early enough for both libraries' normal dependency
+metadata to be accepted. The runtime DLL then supplies the shared API bridge
+and one set of game patches.
+
 ```bash
 dotnet build UtillaLibrary/UtillaLibrary.csproj -c Release
 ```
 
-The DLL lands in `UtillaLibrary/bin/Release/netstandard2.1/UtillaLibrary.dll`. Copy it into
-`BepInEx/plugins/UtillaLibrary/`, then delete any `Utilla.dll` or `GorillaLibrary.dll` still sitting
-under `BepInEx`, or they patch the same methods a second time and you get two of everything.
+The DLL lands in `UtillaLibrary/bin/Release/netstandard2.1/UtillaLibrary.dll`. Copy it into both
+folders. Delete any `Utilla.dll` or `GorillaLibrary.dll` still sitting under `BepInEx`; the combined
+runtime owns those APIs and their patches.
 
 The build finds Gorilla Tag in the usual Steam spots. If yours is elsewhere, pass
 `-p:GamePath="/path/to/Gorilla Tag"`, set a `GamePath` environment variable, or edit
@@ -36,7 +45,9 @@ list, which is the whole reason the two can run together.
 
 The file is called `UtillaLibrary.dll`, which is neither name a mod asks for, so an
 `AssemblyResolve` handler answers both requests with this assembly. Both plugin GUIDs get
-registered, so `[BepInDependency]` on either one resolves.
+registered, so `[BepInDependency]` on either one resolves. The preloader patcher removes the
+guardrail before BepInEx evaluates it; the runtime filter remains as a compatibility fallback
+for loaders that inspect metadata again later.
 
 Gamemode attributes are matched by name instead of by type. Anything called `ModdedGamemode`,
 `ModdedGamemodeJoin` or `ModdedGamemodeLeave`, plus the older `UnbannedGamemode` spellings,
