@@ -1,105 +1,55 @@
-# Utilla-Library
 
-One DLL that keeps both Utilla mods and GorillaLibrary mods working at the same time. Nothing
-changes on the mod side. A plugin built against either library loads, registers its gamemodes and
-gets its join and leave callbacks, without being recompiled or edited.
+---
 
-## The problem
+<p align="center">
+	<a href="https://github.com/picoskids/Utilla-Library/releases"><img src="https://img.shields.io/github/v/release/picoskids/Utilla-Library?label=version&style=for-the-badge"></a>
+	<a href="https://github.com/picoskids/Utilla-Library/releases/latest"><img src="https://img.shields.io/github/downloads/picoskids/Utilla-Library/latest/Poison-Menu.dll?style=for-the-badge"></a>
+</p>
 
-Utilla and GorillaLibrary do the same job in ways that cannot coexist. They patch the same game
-methods, keep separate gamemode registries, and declare each other incompatible, so BepInEx refuses
-to run them together. Pick one and you lose every mod written for the other.
+---
 
-A normal shared library cannot fix that. A compiled mod holds a hard reference to an assembly
-*name*, either `Utilla` or `GorillaLibrary`, plus the type names inside it. Ship a third assembly
-full of new types and the mod cannot see it. So this is one file pretending to be both.
+# Utilla-Library 
+<sub>yes this readme is from seralyth</sub>
 
-## Install
+Poison Menu is a **feature-packed** mod menu for Gorilla Tag, built by the community, for the community. Whether you just want mods, are a developer, or anything inbetween, this menu has you covered. Designed to be **as useful as possible**, it includes a variety of features and options that let you customize your modding experience to your heart’s content.  
 
-Build the project once. Copy `UtillaLibrary.dll` into both `BepInEx/patchers/`
-and `BepInEx/plugins/UtillaLibrary/`.
+<details>
+  <summary><b>❓ Can I use your code?</b></summary>
+	
+**Of course!** But there’s a catch: you gotta play fair. **[GPL-3.0 License](https://www.gnu.org/licenses/gpl-3.0.html) rules apply**, which means that if you use my code:  
+- Your project **must** also be open-source.  
+- Give credit where it's due.
+- No shady stuff.
+- **[Follow the license.](https://www.gnu.org/licenses/gpl-3.0.html)**
 
-The patcher runs before BepInEx resolves plugin dependencies and removes only
-the `BepInIncompatibility` declarations that Utilla and GorillaLibrary place
-on each other. This is early enough for both libraries' normal dependency
-metadata to be accepted. The runtime DLL then supplies the shared API bridge
-and one set of game patches.
+</details>
 
-```bash
-dotnet build UtillaLibrary/UtillaLibrary.csproj -c Release
-```
+<details>
+  <summary><b>💾 Installation</b></summary>
+	
+1. **Download** the latest release **[here](https://github.com/picoskids/Utilla-Library/releases/latest)**
+2. **Drag & Drop** `Utilla-Library.dll` into your plugins folder  
+3. **Launch** Gorilla Tag and enjoy!
 
-The DLL lands in `UtillaLibrary/bin/Release/netstandard2.1/UtillaLibrary.dll`. Copy it into both
-folders. Delete any `Utilla.dll` or `GorillaLibrary.dll` still sitting under `BepInEx`; the combined
-runtime owns those APIs and their patches.
+**🧱 From Source Code (for developers!)**
 
-The build finds Gorilla Tag in the usual Steam spots. If yours is elsewhere, pass
-`-p:GamePath="/path/to/Gorilla Tag"`, set a `GamePath` environment variable, or edit
-`Directory.Build.props`.
+1. Download the source code **[here](https://github.com/picoskids/Utilla-Library/releases/latest)**
+2. Edit `Directory.Build.props` and update `<GamePath>` if your Gorilla Tag is in a custom spot
+3. Build the project with `Ctrl + Shift + B`<Br>
+✅ The DLL will automatically go into your Gorilla Tag plugins folder
 
-## How it works
+</details>
 
-Both APIs live in the one assembly. `GorillaLibrary.*` is the implementation, `Utilla.*` is a skin
-over it that owns no patches and no registry of its own. One set of Harmony patches, one gamemode
-list, which is the whole reason the two can run together.
+---
 
-The file is called `UtillaLibrary.dll`, which is neither name a mod asks for, so an
-`AssemblyResolve` handler answers both requests with this assembly. Both plugin GUIDs get
-registered, so `[BepInDependency]` on either one resolves. The preloader patcher removes the
-guardrail before BepInEx evaluates it; the runtime filter remains as a compatibility fallback
-for loaders that inspect metadata again later.
 
-Gamemode attributes are matched by name instead of by type. Anything called `ModdedGamemode`,
-`ModdedGamemodeJoin` or `ModdedGamemodeLeave`, plus the older `UnbannedGamemode` spellings,
-registers the same way no matter which namespace it came from.
+<details>
+  <summary><b>🗣️ Contact Information</b></summary>
+	
+Message me at [Discord](https://discord.com/users/1379867233160921250?)!
+Email me at [blepgames](mailto:pico@blepgames.org)
 
-Room events come from one place. The network controller raises an internal event as it hands out
-join and leave callbacks, and the Utilla half turns that into `Utilla.Events.RoomJoined`, `RoomLeft`
-and `GameInitialized`.
+</details>
 
-Mods carrying `[BepInIncompatibility]` against Utilla or GorillaLibrary were guarding against double
-patching that does not happen here, so those two GUIDs get filtered out of what the chainloader
-sees. Anything else a mod declares is untouched.
 
-## Changing gamemodes
-
-Same board you always used. Two buttons get added to the left column of the game mode selector and
-the Virtual Stump custom map selector: `-->` for the next page up top, `<--` for the previous page
-below it. Page past the vanilla modes for `MODDED INFECTION`, `MODDED CASUAL` and the rest, then
-every custom gamemode any installed mod registered. Pick one, join a room, callbacks fire.
-
-Setting the mode from code does not work. `GorillaComputer.SetGameModeWithoutButton` is gated behind
-a flag only true during the stump selector's own callbacks, so every other caller gets dropped.
-Inherited from GorillaLibrary, on the list to open up.
-
-## For mod authors
-
-Nothing to do. Keep building against whichever library you already use. Starting fresh, use the
-GorillaLibrary API, it is the bigger one and it is what actually runs.
-
-## Credits
-
-madman had the idea and told me to build it. This exists because of him.
-
-## What is vendored
-
-- `UtillaLibrary/GorillaLibrary/` is [GorillaTagModdingHub/GorillaLibrary](https://github.com/GorillaTagModdingHub/GorillaLibrary),
-  MIT. The Utilla incompatibility is gone, the room bridge and assembly redirect are added, and the
-  gamemode scanner no longer cares about namespaces.
-- `UtillaLibrary/Utilla/` reimplements the public API of
-  [legoandmars/Utilla](https://github.com/legoandmars/Utilla), MIT, checked member for member
-  against a shipped `Utilla.dll`.
-
-Both are MIT and both copyright lines are in `LICENSE`. The GorillaLibrary copy is a snapshot, so
-pulling upstream changes is a manual merge, and `Plugin.cs`, `Behaviours/GameModeManager.cs` and
-`Behaviours/NetworkController.cs` are the files that will fight you.
-
-## Known gaps
-- `GorillaLibrary.Wardrobe` is not bundled. Separate plugin, works fine on top of this.
-- Utilla's old `RoomUtils` joining helpers are still missing, same as current Utilla.
-- Two mods claiming the same gamemode ID still collide, exactly like before.
-- The assembly redirect only exists once this plugin has loaded. Mods that declare a dependency on
-  either GUID load after it and are fine, which is essentially all of them. If one skips the
-  dependency and fails to resolve, copy the file under the name it wants,
-  `cp UtillaLibrary.dll Utilla.dll` or `GorillaLibrary.dll`. BepInEx resolves by filename so that
-  settles it, same assembly either way.
+> This product is not affiliated with Another Axiom Inc. or its videogames Gorilla Tag and Orion Drift and is not endorsed or otherwise sponsored by Another Axiom. Portions of the materials contained herein are property of Another Axiom. ©2026 Another Axiom Inc.
