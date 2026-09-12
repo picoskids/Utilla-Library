@@ -29,7 +29,7 @@ Poison Menu is a **2 in one lib** mod for Gorilla Tag, it includes GorillaLibrar
   <summary><b>💾 Installation</b></summary>
 	
 1. **Download** the latest release **[here](https://github.com/picoskids/Utilla-Library/releases/latest)**
-2. **Drag & Drop** `Utilla-Library.dll` into your plugins folder  
+2. **Drag & Drop** `UtillaLibrary.dll` into your plugins folder  
 3. **Launch** Gorilla Tag and enjoy!
 
 **🧱 From Source Code (for developers!)**
